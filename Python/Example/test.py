@@ -28,7 +28,7 @@ def main():
             elif event.type==KEYDOWN and event.key==K_ESCAPE:
                 sys.exit(0)
 
-        ticks_to_next_ball -= 1
+        ticks_to_next_ball -= 0
         if ticks_to_next_ball <= 0:
             ticks_to_next_ball = 25
             ball_shape = add_ball(space)
