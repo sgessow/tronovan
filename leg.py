@@ -21,19 +21,75 @@
 # 3. This notice may not be removed or altered from any source distribution.
 
 from examples.framework import (Framework, main)
+from Box2D import (b2EdgeShape, b2FixtureDef, b2PolygonShape, b2Random)
+import numpy
 
 
-class Empty(Framework):
+class Robot(Framework):
     """You can use this class as an outline for your tests."""
-    name = "Empty"  # Name of the class to display
-    description = "The description text goes here"
+    name = "Robot"  # Name of the class to display
+    description = "Simple Walking Robot"
 
     def __init__(self):
         """
         Initialize all of your objects here.
         Be sure to call the Framework's initializer first.
         """
-        super(Empty, self).__init__()
+        super(Robot, self).__init__()
+        self.start_y=10
+        self.len_torso=6
+        self.len_crank_arm=2
+        l=numpy.sqrt(self.len_torso**2+self.len_crank_arm**2)
+        print(l)
+        self.len_leg=2*l
+        leg_angle=numpy.arctan(self.len_torso/self.len_crank_arm)
+        ground = self.world.CreateStaticBody(
+            position=(0, 0),
+            shapes=[b2EdgeShape(vertices=[(-1000, 0), (1000, 0)])]
+        )
+
+        torso = self.world.CreateDynamicBody(
+            position=(0, self.start_y),
+            fixtures=b2FixtureDef(
+                shape=b2PolygonShape(box=(.5, self.len_torso/2)), density=1.0),
+        )
+
+        crank_arm=self.world.CreateDynamicBody(
+            position=(0,self.start_y+self.len_torso/2),
+            fixtures=b2FixtureDef(
+                shape=b2PolygonShape(box=(self.len_crank_arm,.1)), density=1.0),
+        )
+
+        l=numpy.sqrt(self.len_torso^2+self.len_crank_arm^2)
+        x=(self.len_leg-2*l)/2*numpy.sin(leg_angle)
+        y=self.len_leg*numpy.cos(leg_angle)-l*numpy.cos(leg_angle)
+        right_leg=self.world.CreateDynamicBody(
+            position=(0,self.start_y-self.len_torso/2),
+            angle=(-1*leg_angle+numpy.pi/2),
+            fixtures=b2FixtureDef(
+                shape=b2PolygonShape(box=(.1,self.len_leg/2)), density=1.0),
+        )
+
+        self.motor = self.world.CreateRevoluteJoint(
+                    bodyA=torso,
+                    bodyB=crank_arm,
+                    anchor=(torso.worldCenter[0],torso.worldCenter[1]+self.len_torso/2),
+                    motorSpeed=5.0,
+                    maxMotorTorque = 500,
+                    enableMotor=False,
+        )
+        self.right_joint=self.world.CreateRevoluteJoint(
+                    bodyA=crank_arm,
+                    bodyB=right_leg,
+                    anchor=(crank_arm.worldCenter[0]-self.len_crank_arm,crank_arm.worldCenter[1]),
+        )
+        self.right_slide=self.world.CreateWheelJoint(
+                    bodyA=right_leg,
+                    bodyB=torso,
+                    anchor=(torso.worldCenter),
+        )
+
+
 
         # Initialize all of the objects
 
@@ -54,12 +110,12 @@ class Empty(Framework):
         If placed at the end, it will cause the physics step to happen after your code.
         """
 
-        super(Empty, self).Step(settings)
+        super(Robot, self).Step(settings)
 
         # do stuff
 
         # Placed after the physics step, it will draw on top of physics objects
-        self.Print("*** Base your own testbeds on me! ***")
+        #self.Print("*** Base your own testbeds on me! ***")
 
     def ShapeDestroyed(self, shape):
         """
@@ -77,4 +133,4 @@ class Empty(Framework):
     # See the other testbed examples for more information.
 
 if __name__ == "__main__":
-    main(Empty)
+    main(Robot)
