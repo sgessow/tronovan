@@ -59,11 +59,6 @@ class Robot(Framework):
             fixtures=b2FixtureDef(
                 shape=b2PolygonShape(box=(self.len_crank_arm,.1)),density=1.0,filter=b2Filter(groupIndex=group,)),
         )
-        slot_joint=self.world.CreateDynamicBody(
-            position=(0,self.start_y-self.len_torso/2),
-            fixtures=b2FixtureDef(
-                shape=b2CircleShape(radius=.05),density=1.0,filter=b2Filter(groupIndex=group,)),
-        )
         l=numpy.sqrt(self.len_torso**2+self.len_crank_arm**2)
         x=(self.len_leg-2*l)*numpy.cos(leg_angle)/2
         y=(self.len_leg-2*l)*numpy.sin(leg_angle)/2
@@ -74,6 +69,13 @@ class Robot(Framework):
                 shape=b2PolygonShape(box=(.1,self.len_leg/2)), density=1.0,filter=b2Filter(groupIndex=group,)),
         )
 
+        slot_joint=self.world.CreateDynamicBody(
+            position=(0,torso.worldCenter[1]-self.len_torso/2),
+            angle=(-1*leg_angle+numpy.pi/2),
+            fixtures=b2FixtureDef(
+                shape=b2CircleShape(radius=.05),density=1.0,filter=b2Filter(groupIndex=group,)),
+        )
+
 
         self.motor = self.world.CreateRevoluteJoint(
                     bodyA=torso,
@@ -81,7 +83,7 @@ class Robot(Framework):
                     anchor=(torso.worldCenter[0],torso.worldCenter[1]+self.len_torso/2),
                     motorSpeed=5.0,
                     maxMotorTorque = 500,
-                    enableMotor=False,
+                    enableMotor=True,
         )
         self.right_joint=self.world.CreateRevoluteJoint(
                     bodyA=crank_arm,
@@ -91,12 +93,14 @@ class Robot(Framework):
         self.right_slide_rev=self.world.CreateRevoluteJoint(
                     bodyA=slot_joint,
                     bodyB=torso,
-                    anchor=(torso.worldCenter[0],torso.worldCenter[0]-self.len_torso/2),
+                    anchor=(torso.worldCenter[0],torso.worldCenter[1]-self.len_torso/2),
+                    #localAnchorB=(torso.worldCenter[0],torso.worldCenter[1]-self.len_torso)
         )
         self.right_slide_pris=self.world.CreatePrismaticJoint(
-                    bodyA=right_leg,
-                    bodyB=torso,
+                    bodyA=slot_joint,
+                    bodyB=right_leg,
                     anchor=(torso.worldCenter[0],torso.worldCenter[0]-self.len_torso/2),
+                    axis=(0,1),
         )
 
 
