@@ -42,6 +42,8 @@ class Robot(Framework):
         self.len_torso=6
         self.len_crank_arm=2
         self.len_leg=14
+        self.motor_torque=500
+        self.motor_speed=1
         leg_angle=numpy.arctan(self.len_torso/self.len_crank_arm)
         ground = self.world.CreateStaticBody(
             position=(0, 0),
@@ -59,6 +61,7 @@ class Robot(Framework):
             fixtures=b2FixtureDef(
                 shape=b2PolygonShape(box=(self.len_crank_arm,.1)),density=1.0,filter=b2Filter(groupIndex=group,)),
         )
+        #Creating the legs
         l=numpy.sqrt(self.len_torso**2+self.len_crank_arm**2)
         x=(self.len_leg-2*l)*numpy.cos(leg_angle)/2
         y=(self.len_leg-2*l)*numpy.sin(leg_angle)/2
@@ -68,39 +71,68 @@ class Robot(Framework):
             fixtures=b2FixtureDef(
                 shape=b2PolygonShape(box=(.1,self.len_leg/2)), density=1.0,filter=b2Filter(groupIndex=group,)),
         )
+        left_leg=self.world.CreateDynamicBody(
+            position=(-x,self.start_y-y-self.len_torso/2),
+            angle=(leg_angle+numpy.pi/2),
+            fixtures=b2FixtureDef(
+                shape=b2PolygonShape(box=(.1,self.len_leg/2)), density=1.0,filter=b2Filter(groupIndex=group,)),
+        )
 
-        slot_joint=self.world.CreateDynamicBody(
+        slot_joint_right=self.world.CreateDynamicBody(
             position=(0,torso.worldCenter[1]-self.len_torso/2),
             angle=(-1*leg_angle+numpy.pi/2),
             fixtures=b2FixtureDef(
                 shape=b2CircleShape(radius=.05),density=1.0,filter=b2Filter(groupIndex=group,)),
         )
+        slot_joint_left=self.world.CreateDynamicBody(
+            position=(0,torso.worldCenter[1]-self.len_torso/2),
+            angle=(leg_angle+numpy.pi/2),
+            fixtures=b2FixtureDef(
+                shape=b2CircleShape(radius=.05),density=1.0,filter=b2Filter(groupIndex=group,)),
+        )
 
-
+        #Motor Joint
         self.motor = self.world.CreateRevoluteJoint(
                     bodyA=torso,
                     bodyB=crank_arm,
                     anchor=(torso.worldCenter[0],torso.worldCenter[1]+self.len_torso/2),
-                    motorSpeed=5.0,
-                    maxMotorTorque = 500,
+                    motorSpeed=self.motor_speed,
+                    maxMotorTorque = self.motor_torque,
                     enableMotor=True,
         )
+        #Joints at end of pivot
         self.right_joint=self.world.CreateRevoluteJoint(
                     bodyA=crank_arm,
                     bodyB=right_leg,
                     anchor=(crank_arm.worldCenter[0]-self.len_crank_arm,crank_arm.worldCenter[1]),
         )
-        self.right_slide_rev=self.world.CreateRevoluteJoint(
-                    bodyA=slot_joint,
+        self.left_joint=self.world.CreateRevoluteJoint(
+                    bodyA=crank_arm,
+                    bodyB=left_leg,
+                    anchor=(crank_arm.worldCenter[0]+self.len_crank_arm,crank_arm.worldCenter[1]),
+        )
+        #Making the slot joint composed of rev joint and prismatic joints
+        self.left_joint_rev=self.world.CreateRevoluteJoint(
+                    bodyA=slot_joint_right,
                     bodyB=torso,
-                    anchor=(torso.worldCenter[0],torso.worldCenter[1]-self.len_torso/2),
-                    #localAnchorB=(torso.worldCenter[0],torso.worldCenter[1]-self.len_torso)
+                    anchor=(0,self.start_y-self.len_torso/2),
+        )
+        self.right_joint_rev=self.world.CreateRevoluteJoint(
+                    bodyA=slot_joint_left,
+                    bodyB=torso,
+                    anchor=(0,self.start_y-self.len_torso/2),
         )
         self.right_slide_pris=self.world.CreatePrismaticJoint(
-                    bodyA=slot_joint,
+                    bodyA=slot_joint_right,
                     bodyB=right_leg,
                     anchor=(torso.worldCenter[0],torso.worldCenter[0]-self.len_torso/2),
-                    axis=(0,1),
+                    localAxisA=(0,1),
+        )
+        self.left_slide_pris=self.world.CreatePrismaticJoint(
+                    bodyA=slot_joint_left,
+                    bodyB=left_leg,
+                    anchor=(torso.worldCenter[0],torso.worldCenter[0]-self.len_torso/2),
+                    localAxisA=(0,1),
         )
 
 
