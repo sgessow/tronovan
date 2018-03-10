@@ -42,8 +42,8 @@ class Robot(Framework):
         self.len_torso=6
         self.len_crank_arm=2
         self.len_leg=14
-        self.motor_torque=500
-        self.motor_speed=1
+        self.motor_torque=400
+        self.motor_speed=5
         leg_angle=numpy.arctan(self.len_torso/self.len_crank_arm)
         ground = self.world.CreateStaticBody(
             position=(0, 0),
@@ -52,14 +52,15 @@ class Robot(Framework):
 
         torso = self.world.CreateDynamicBody(
             position=(0, self.start_y),
+            fixedRotation=True,
             fixtures=b2FixtureDef(
-                shape=b2PolygonShape(box=(.5, self.len_torso/2)),density=1.0,filter=b2Filter(groupIndex=group,)),
+                shape=b2PolygonShape(box=(.5, self.len_torso/2)),density=1.3,filter=b2Filter(groupIndex=group,)),
         )
 
         crank_arm=self.world.CreateDynamicBody(
             position=(0,self.start_y+self.len_torso/2),
             fixtures=b2FixtureDef(
-                shape=b2PolygonShape(box=(self.len_crank_arm,.1)),density=1.0,filter=b2Filter(groupIndex=group,)),
+                shape=b2PolygonShape(box=(self.len_crank_arm,.1)),density=.1,filter=b2Filter(groupIndex=group,)),
         )
         #Creating the legs
         l=numpy.sqrt(self.len_torso**2+self.len_crank_arm**2)
@@ -69,13 +70,13 @@ class Robot(Framework):
             position=(x,self.start_y-y-self.len_torso/2),
             angle=(-1*leg_angle+numpy.pi/2),
             fixtures=b2FixtureDef(
-                shape=b2PolygonShape(box=(.1,self.len_leg/2)), density=1.0,filter=b2Filter(groupIndex=group,)),
+                shape=b2PolygonShape(box=(.1,self.len_leg/2)), density=.50,filter=b2Filter(groupIndex=group),friction=1,restitution=0),
         )
         left_leg=self.world.CreateDynamicBody(
             position=(-x,self.start_y-y-self.len_torso/2),
             angle=(leg_angle+numpy.pi/2),
             fixtures=b2FixtureDef(
-                shape=b2PolygonShape(box=(.1,self.len_leg/2)), density=1.0,filter=b2Filter(groupIndex=group,)),
+                shape=b2PolygonShape(box=(.1,self.len_leg/2)), density=1.0,filter=b2Filter(groupIndex=group),friction=1,restitution=0),
         )
 
         slot_joint_right=self.world.CreateDynamicBody(
