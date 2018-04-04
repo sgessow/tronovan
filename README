@@ -1,0 +1,4 @@
+Usage for leg.py:
+need to activate conda with: source activate py34
+
+Note: leg.py depends on the framework found in the examples folder of pybox2d

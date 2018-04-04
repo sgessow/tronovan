@@ -31,19 +31,24 @@ class Robot(Framework):
     name = "Robot"  # Name of the class to display
     description = "Simple Walking Robot"
 
-    def __init__(self):
+    def __init__(self,args=None):
         """
         Initialize all of your objects here.
         Be sure to call the Framework's initializer first.
         """
+        if args==None:
+            args={"start_y":10,"len_torso":6,"len_crank_arm":2,"len_leg":14,"motor_torque":400, "motor_speed":5}
         super(Robot, self).__init__()
         group=-1
-        self.start_y=10
-        self.len_torso=6
-        self.len_crank_arm=2
-        self.len_leg=14
-        self.motor_torque=400
-        self.motor_speed=5
+        self.start_y=args["start_y"]
+        self.len_torso=args["len_torso"]
+        self.len_crank_arm=args["len_crank_arm"]
+        self.len_leg=args["len_leg"]
+        self.motor_torque=args["motor_torque"]
+        self.motor_speed=args["motor_speed"]
+        #Non controlled constants
+        torso_width=.001
+        other_width=.001
         leg_angle=numpy.arctan(self.len_torso/self.len_crank_arm)
         ground = self.world.CreateStaticBody(
             position=(0, 0),
@@ -54,13 +59,13 @@ class Robot(Framework):
             position=(0, self.start_y),
             fixedRotation=True,
             fixtures=b2FixtureDef(
-                shape=b2PolygonShape(box=(.5, self.len_torso/2)),density=1.3,filter=b2Filter(groupIndex=group,)),
+                shape=b2PolygonShape(box=(torso_width, self.len_torso/2)),density=1.3,filter=b2Filter(groupIndex=group,)),
         )
 
         crank_arm=self.world.CreateDynamicBody(
             position=(0,self.start_y+self.len_torso/2),
             fixtures=b2FixtureDef(
-                shape=b2PolygonShape(box=(self.len_crank_arm,.1)),density=.1,filter=b2Filter(groupIndex=group,)),
+                shape=b2PolygonShape(box=(self.len_crank_arm,other_width)),density=.1,filter=b2Filter(groupIndex=group,)),
         )
         #Creating the legs
         l=numpy.sqrt(self.len_torso**2+self.len_crank_arm**2)
@@ -70,26 +75,26 @@ class Robot(Framework):
             position=(x,self.start_y-y-self.len_torso/2),
             angle=(-1*leg_angle+numpy.pi/2),
             fixtures=b2FixtureDef(
-                shape=b2PolygonShape(box=(.1,self.len_leg/2)), density=.50,filter=b2Filter(groupIndex=group),friction=1,restitution=0),
+                shape=b2PolygonShape(box=(other_width,self.len_leg/2)), density=.50,filter=b2Filter(groupIndex=group),friction=1,restitution=0),
         )
         left_leg=self.world.CreateDynamicBody(
             position=(-x,self.start_y-y-self.len_torso/2),
             angle=(leg_angle+numpy.pi/2),
             fixtures=b2FixtureDef(
-                shape=b2PolygonShape(box=(.1,self.len_leg/2)), density=1.0,filter=b2Filter(groupIndex=group),friction=1,restitution=0),
+                shape=b2PolygonShape(box=(other_width,self.len_leg/2)), density=1.0,filter=b2Filter(groupIndex=group),friction=1,restitution=0),
         )
 
         slot_joint_right=self.world.CreateDynamicBody(
             position=(0,torso.worldCenter[1]-self.len_torso/2),
             angle=(-1*leg_angle+numpy.pi/2),
             fixtures=b2FixtureDef(
-                shape=b2CircleShape(radius=.05),density=1.0,filter=b2Filter(groupIndex=group,)),
+                shape=b2CircleShape(radius=.0005),density=1.0,filter=b2Filter(groupIndex=group,)),
         )
         slot_joint_left=self.world.CreateDynamicBody(
             position=(0,torso.worldCenter[1]-self.len_torso/2),
             angle=(leg_angle+numpy.pi/2),
             fixtures=b2FixtureDef(
-                shape=b2CircleShape(radius=.05),density=1.0,filter=b2Filter(groupIndex=group,)),
+                shape=b2CircleShape(radius=.0005),density=1.0,filter=b2Filter(groupIndex=group,)),
         )
 
         #Motor Joint
@@ -181,4 +186,4 @@ class Robot(Framework):
     # See the other testbed examples for more information.
 
 if __name__ == "__main__":
-    main(Robot)
+    main(Robot,{"start_y":.1,"len_torso":.03,"len_crank_arm":.01,"len_leg":.06,"motor_torque":10, "motor_speed":2})
