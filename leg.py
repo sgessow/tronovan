@@ -39,7 +39,7 @@ class Robot(Framework):
         if args==None:
             args={"start_y":10,"len_torso":6,"len_crank_arm":2,"len_leg":14,"motor_torque":400, "motor_speed":5}
         super(Robot, self).__init__()
-        group=-1
+        self.group=-1
         self.start_y=args["start_y"]
         self.len_torso=args["len_torso"]
         self.len_crank_arm=args["len_crank_arm"]
@@ -55,89 +55,108 @@ class Robot(Framework):
             shapes=[b2EdgeShape(vertices=[(-1000, 0), (1000, 0)])]
         )
 
-        torso = self.world.CreateDynamicBody(
+        self.torso = self.world.CreateDynamicBody(
             position=(0, self.start_y),
             fixedRotation=True,
             fixtures=b2FixtureDef(
-                shape=b2PolygonShape(box=(torso_width, self.len_torso/2)),density=1.3,filter=b2Filter(groupIndex=group,)),
+                shape=b2PolygonShape(box=(torso_width, self.len_torso/2)),density=1.3,filter=b2Filter(groupIndex=self.group,)),
         )
 
-        crank_arm=self.world.CreateDynamicBody(
+        self.crank_arm=self.world.CreateDynamicBody(
             position=(0,self.start_y+self.len_torso/2),
             fixtures=b2FixtureDef(
-                shape=b2PolygonShape(box=(self.len_crank_arm,other_width)),density=.1,filter=b2Filter(groupIndex=group,)),
+                shape=b2PolygonShape(box=(self.len_crank_arm,other_width)),density=.1,filter=b2Filter(groupIndex=self.group,)),
         )
         #Creating the legs
         l=numpy.sqrt(self.len_torso**2+self.len_crank_arm**2)
         x=(self.len_leg-2*l)*numpy.cos(leg_angle)/2
         y=(self.len_leg-2*l)*numpy.sin(leg_angle)/2
-        Robot.right_leg=self.world.CreateDynamicBody(
+        self.right_leg=self.world.CreateDynamicBody(
             position=(x,self.start_y-y-self.len_torso/2),
             angle=(-1*leg_angle+numpy.pi/2),
             fixtures=b2FixtureDef(
-                shape=b2PolygonShape(box=(other_width,self.len_leg/2)), density=.50,filter=b2Filter(groupIndex=group),friction=1,restitution=0),
+                shape=b2PolygonShape(box=(other_width,self.len_leg/2)), density=.50,filter=b2Filter(groupIndex=self.group),friction=1,restitution=0),
         )
-        left_leg=self.world.CreateDynamicBody(
+        self.left_leg=self.world.CreateDynamicBody(
             position=(-x,self.start_y-y-self.len_torso/2),
             angle=(leg_angle+numpy.pi/2),
             fixtures=b2FixtureDef(
-                shape=b2PolygonShape(box=(other_width,self.len_leg/2)), density=1.0,filter=b2Filter(groupIndex=group),friction=1,restitution=0),
+                shape=b2PolygonShape(box=(other_width,self.len_leg/2)), density=1.0,filter=b2Filter(groupIndex=self.group),friction=1,restitution=0),
         )
-
+        self.right_foot=self.world.CreateDynamicBody(
+            position=(self.len_leg/2*numpy.cos(leg_angle),self.len_leg*numpy.sin(leg_angle)),
+            fixtures=b2FixtureDef(
+                shape=b2CircleShape(radius=.003),density=0.1,filter=b2Filter(groupIndex=self.group,)),
+        )
+        self.left_foot=self.world.CreateDynamicBody(
+            position=(-1*self.len_leg/2*numpy.cos(leg_angle),self.len_leg*numpy.sin(leg_angle)),
+            fixtures=b2FixtureDef(
+                shape=b2CircleShape(radius=.003),density=0.1,filter=b2Filter(groupIndex=self.group,)),
+        )
         slot_joint_right=self.world.CreateDynamicBody(
-            position=(0,torso.worldCenter[1]-self.len_torso/2),
+            position=(0,self.torso.worldCenter[1]-self.len_torso/2),
             angle=(-1*leg_angle+numpy.pi/2),
             fixtures=b2FixtureDef(
-                shape=b2CircleShape(radius=.0005),density=1.0,filter=b2Filter(groupIndex=group,)),
+                shape=b2CircleShape(radius=.0005),density=1.0,filter=b2Filter(groupIndex=self.group,)),
         )
         slot_joint_left=self.world.CreateDynamicBody(
-            position=(0,torso.worldCenter[1]-self.len_torso/2),
+            position=(0,self.torso.worldCenter[1]-self.len_torso/2),
             angle=(leg_angle+numpy.pi/2),
             fixtures=b2FixtureDef(
-                shape=b2CircleShape(radius=.0005),density=1.0,filter=b2Filter(groupIndex=group,)),
+                shape=b2CircleShape(radius=.0005),density=1.0,filter=b2Filter(groupIndex=self.group,)),
         )
-
+        #Attach Feat to legs
+        self.right_foot_weld=self.world.CreateWeldJoint(
+            bodyA=self.right_foot,
+            bodyB=self.right_leg,
+            anchor=(self.torso.worldCenter[0]+self.len_leg/2*numpy.cos(leg_angle),self.torso.worldCenter[1]+self.len_leg*numpy.sin(leg_angle)),
+        )
+        self.left_foot_weld=self.world.CreateWeldJoint(
+            bodyA=self.left_foot,
+            bodyB=self.left_leg,
+            anchor=(self.torso.worldCenter[0]-self.len_leg/2*numpy.cos(leg_angle),self.torso.worldCenter[1]+self.len_leg*numpy.sin(leg_angle)),
+        )
         #Motor Joint
         self.motor = self.world.CreateRevoluteJoint(
-                    bodyA=torso,
-                    bodyB=crank_arm,
-                    anchor=(torso.worldCenter[0],torso.worldCenter[1]+self.len_torso/2),
+                    bodyA=self.torso,
+                    bodyB=self.crank_arm,
+                    anchor=(self.torso.worldCenter[0],self.torso.worldCenter[1]+self.len_torso/2),
                     motorSpeed=self.motor_speed,
                     maxMotorTorque = self.motor_torque,
                     enableMotor=True,
         )
         #Joints at end of pivot
         self.right_joint=self.world.CreateRevoluteJoint(
-                    bodyA=crank_arm,
-                    bodyB=Robot.right_leg,
-                    anchor=(crank_arm.worldCenter[0]-self.len_crank_arm,crank_arm.worldCenter[1]),
+                    bodyA=self.crank_arm,
+                    bodyB=self.right_leg,
+                    anchor=(self.crank_arm.worldCenter[0]-self.len_crank_arm,self.crank_arm.worldCenter[1]),
         )
         self.left_joint=self.world.CreateRevoluteJoint(
-                    bodyA=crank_arm,
-                    bodyB=left_leg,
-                    anchor=(crank_arm.worldCenter[0]+self.len_crank_arm,crank_arm.worldCenter[1]),
+                    bodyA=self.crank_arm,
+                    bodyB=self.left_leg,
+                    anchor=(self.crank_arm.worldCenter[0]+self.len_crank_arm,self.crank_arm.worldCenter[1]),
         )
         #Making the slot joint composed of rev joint and prismatic joints
         self.left_joint_rev=self.world.CreateRevoluteJoint(
                     bodyA=slot_joint_right,
-                    bodyB=torso,
+                    bodyB=self.torso,
                     anchor=(0,self.start_y-self.len_torso/2),
         )
         self.right_joint_rev=self.world.CreateRevoluteJoint(
                     bodyA=slot_joint_left,
-                    bodyB=torso,
+                    bodyB=self.torso,
                     anchor=(0,self.start_y-self.len_torso/2),
         )
         self.right_slide_pris=self.world.CreatePrismaticJoint(
                     bodyA=slot_joint_right,
-                    bodyB=Robot.right_leg,
-                    anchor=(torso.worldCenter[0],torso.worldCenter[0]-self.len_torso/2),
+                    bodyB=self.right_leg,
+                    anchor=(self.torso.worldCenter[0],self.torso.worldCenter[0]-self.len_torso/2),
                     localAxisA=(0,1),
         )
         self.left_slide_pris=self.world.CreatePrismaticJoint(
                     bodyA=slot_joint_left,
-                    bodyB=left_leg,
-                    anchor=(torso.worldCenter[0],torso.worldCenter[0]-self.len_torso/2),
+                    bodyB=self.left_leg,
+                    anchor=(self.torso.worldCenter[0],self.torso.worldCenter[0]-self.len_torso/2),
                     localAxisA=(0,1),
         )
 
@@ -162,11 +181,21 @@ class Robot(Framework):
         If placed at the beginning, it will cause the actual physics step to happen first.
         If placed at the end, it will cause the physics step to happen after your code.
         """
-        print(Robot.right_leg.position)
+
         super(Robot, self).Step(settings)
-
         # do stuff
-
+        position_of_foot=(self.right_foot.position)
+        position_of_body=(self.torso.position)
+        point_foot = self.world.CreateStaticBody(
+            position=position_of_foot,
+            shapes=[b2CircleShape(radius=.0001)],
+            active=False,
+        )
+        point_body = self.world.CreateStaticBody(
+            position=position_of_body,
+            shapes=[b2CircleShape(radius=.0001)],
+            active=False,
+        )
         # Placed after the physics step, it will draw on top of physics objects
         #self.Print("*** Base your own testbeds on me! ***")
 
