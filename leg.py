@@ -71,7 +71,7 @@ class Robot(Framework):
         l=numpy.sqrt(self.len_torso**2+self.len_crank_arm**2)
         x=(self.len_leg-2*l)*numpy.cos(leg_angle)/2
         y=(self.len_leg-2*l)*numpy.sin(leg_angle)/2
-        right_leg=self.world.CreateDynamicBody(
+        Robot.right_leg=self.world.CreateDynamicBody(
             position=(x,self.start_y-y-self.len_torso/2),
             angle=(-1*leg_angle+numpy.pi/2),
             fixtures=b2FixtureDef(
@@ -109,7 +109,7 @@ class Robot(Framework):
         #Joints at end of pivot
         self.right_joint=self.world.CreateRevoluteJoint(
                     bodyA=crank_arm,
-                    bodyB=right_leg,
+                    bodyB=Robot.right_leg,
                     anchor=(crank_arm.worldCenter[0]-self.len_crank_arm,crank_arm.worldCenter[1]),
         )
         self.left_joint=self.world.CreateRevoluteJoint(
@@ -130,7 +130,7 @@ class Robot(Framework):
         )
         self.right_slide_pris=self.world.CreatePrismaticJoint(
                     bodyA=slot_joint_right,
-                    bodyB=right_leg,
+                    bodyB=Robot.right_leg,
                     anchor=(torso.worldCenter[0],torso.worldCenter[0]-self.len_torso/2),
                     localAxisA=(0,1),
         )
@@ -162,7 +162,7 @@ class Robot(Framework):
         If placed at the beginning, it will cause the actual physics step to happen first.
         If placed at the end, it will cause the physics step to happen after your code.
         """
-
+        print(Robot.right_leg.position)
         super(Robot, self).Step(settings)
 
         # do stuff
