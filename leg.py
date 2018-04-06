@@ -39,6 +39,8 @@ class Robot(Framework):
         if args==None:
             args={"start_y":10,"len_torso":6,"len_crank_arm":2,"len_leg":14,"motor_torque":400, "motor_speed":5}
         super(Robot, self).__init__()
+        self.count=0
+        self.points=[]
         self.group=-1
         self.start_y=args["start_y"]
         self.len_torso=args["len_torso"]
@@ -184,18 +186,27 @@ class Robot(Framework):
 
         super(Robot, self).Step(settings)
         # do stuff
-        position_of_foot=(self.right_foot.position)
-        position_of_body=(self.torso.position)
-        point_foot = self.world.CreateStaticBody(
-            position=position_of_foot,
-            shapes=[b2CircleShape(radius=.0001)],
-            active=False,
-        )
-        point_body = self.world.CreateStaticBody(
-            position=position_of_body,
-            shapes=[b2CircleShape(radius=.0001)],
-            active=False,
-        )
+        if(self.count%5==0):
+            position_of_foot=(self.right_foot.position)
+            position_of_body=(self.torso.position)
+            point_foot = self.world.CreateStaticBody(
+                position=position_of_foot,
+                shapes=[b2CircleShape(radius=.0001)],
+                active=False,
+            )
+            point_body = self.world.CreateStaticBody(
+                position=position_of_body,
+                shapes=[b2CircleShape(radius=.0001)],
+                active=False,
+            )
+            self.points.append(point_foot)
+            self.points.append(point_body)
+            self.count=1
+            # if(len(self.points)>=10):
+            #     to_delete_one=self.points.pop(0)
+            #     to_delete_one.delete
+        else:
+            self.count+=1
         # Placed after the physics step, it will draw on top of physics objects
         #self.Print("*** Base your own testbeds on me! ***")
 
